@@ -1,0 +1,22 @@
+Como rodar os dois ao mesmo tempo
+Vamos começar com a área limpa. Feche o terminal que está aberto clicando na lixeira do painel do VS Code e siga estes dois passos:
+
+1. Levantando o Frontend (A Tela)
+
+Abra um terminal novo no VS Code (`Ctrl + ``).
+
+Entre na pasta correta: cd frontend
+
+Inicie o Vite: npm run dev
+
+Pode deixar esse terminal aberto e quietinho aí. Ele já está trabalhando.
+
+2. Levantando o Backend (O Cérebro)
+
+No canto superior direito do próprio painel de terminal do VS Code, clique no ícone de "+" (Nova Instância de Terminal) ou no ícone de dividir o terminal ao meio. Isso vai abrir uma segunda "janela" preta ao lado ou na lista.
+
+Neste segundo terminal, entre na pasta do cozinheiro: cd backend
+
+Ative o ambiente isolado: .\venv\Scripts\activate
+
+Inicie o servidor Python: uvicorn main:app --reload

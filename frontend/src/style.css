@@ -1,0 +1,128 @@
+:root {
+  /* Paleta de Cores Customizada */
+  --bg-fundo: #0f172a;       /* Azul muito escuro para o fundo da tela */
+  --cor-mesa: #064e3b;       /* Verde clássico de feltro de poker */
+  --borda-mesa: #1e293b;     /* Cor da borda estofada da mesa */
+  --cor-texto: #f8fafc;
+  
+  /* Variáveis para o efeito Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-fundo);
+  color: var(--cor-texto);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* O formato oval da mesa de poker */
+.mesa-de-poker {
+  background-color: var(--cor-mesa);
+  border: 15px solid var(--borda-mesa);
+  border-radius: 200px; /* Arredonda as bordas para criar o oval */
+  width: 90%;
+  max-width: 1000px;
+  height: 600px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 20px 50px rgba(0,0,0,0.5);
+}
+
+/* Textos centralizados */
+h2, h3, p {
+  margin: 5px 0;
+  text-align: center;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Efeito Glassmorphism para os "berços" onde as cartas vão ficar */
+.cartas-adversario, .cartas-comunitarias, .cartas-jogador {
+  display: flex;
+  gap: 15px;
+  min-height: 120px;
+  min-width: 200px;
+  padding: 15px;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); /* Suporte para Safari */
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  justify-content: center;
+  align-items: center;
+}
+
+/* Área de controles do jogador */
+.area-jogador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.controles {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+button:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Cores específicas para botões */
+#btn-correr { background-color: #ef4444; }
+#btn-correr:hover { background-color: #dc2626; }
+
+#btn-pagar { background-color: #eab308; color: #422006; }
+#btn-pagar:hover { background-color: #ca8a04; }
+
+#btn-apostar { background-color: #10b981; }
+#btn-apostar:hover { background-color: #059669; }
+
+/* Estilo do campo numérico */
+#input-aposta {
+  background-color: var(--borda-mesa);
+  color: white;
+  border: 1px solid var(--glass-border);
+  padding: 10px;
+  border-radius: 6px;
+  width: 90px;
+  font-weight: bold;
+  text-align: center;
+  outline: none;
+  font-size: 16px;
+}
+
+#input-aposta:focus {
+  border-color: #10b981; /* Fica verde quando selecionado para combinar com o botão de aposta */
+}

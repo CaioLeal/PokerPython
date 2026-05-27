@@ -45,6 +45,8 @@ socket.onmessage = (event) => {
             // Coloca a imagem na mesa
             divMinhasCartas.appendChild(elCarta);
         });
+
+        gsap.from("#minhas-cartas img", { y: -300, opacity: 0, rotation: 180, duration: 0.6, stagger: 0.15, ease: "back.out(1.2)" });
     }
     else if (dados.tipo === "atualizacao_mesa") {
         spanMinhasFichas.innerText = dados.fichas_jogador;
@@ -57,20 +59,44 @@ socket.onmessage = (event) => {
         console.log("🃏", dados.mensagem);
         
         const divCartasMesa = document.getElementById("cartas-mesa");
-        divCartasMesa.innerHTML = ""; // Limpa para não duplicar
+        divCartasMesa.innerHTML = ""; 
 
-        // Renderiza cada carta comunitária exatamente como fez na sua mão
         dados.cartas_mesa.forEach(carta => {
             const elCarta = document.createElement("img");
             elCarta.src = `/svgs/${carta.valor}_${carta.naipe}.svg`;
             elCarta.alt = `${carta.valor} de ${carta.naipe}`;
-            
             elCarta.style.height = "120px";
             elCarta.style.borderRadius = "8px";
             elCarta.style.boxShadow = "0 4px 8px rgba(0,0,0,0.4)";
-            
             divCartasMesa.appendChild(elCarta);
         });
+
+        gsap.from("#cartas-mesa img", { scale: 0, opacity: 0, rotation: 45, duration: 0.5, stagger: 0.1, ease: "power2.out" });
+
+        // Se o Python calculou o fim da rodada
+        if (dados.showdown) {
+            setTimeout(() => {
+                alert(dados.showdown.mensagem);
+
+                spanMinhasFichas.innerText = dados.showdown.fichas_jogador;
+                spanPote.innerText = "0"; // O pote esvaziou
+                
+                const divCartasBot = document.getElementById("cartas-bot");
+                divCartasBot.innerHTML = "";
+                
+                dados.showdown.cartas_bot.forEach(carta => {
+                    const elCartaBot = document.createElement("img");
+                    elCartaBot.src = `/svgs/${carta.valor}_${carta.naipe}.svg`;
+                    elCartaBot.style.height = "120px";
+                    elCartaBot.style.borderRadius = "8px";
+                    elCartaBot.style.boxShadow = "0 4px 8px rgba(0,0,0,0.4)";
+                    divCartasBot.appendChild(elCartaBot);
+                });
+
+                // Mostra o botão para iniciar a próxima mão
+                document.getElementById("btn-nova-rodada").style.display = "inline-block";
+            }, 500);
+        }
     }
     else if (dados.tipo === "erro") {
         alert(dados.mensagem); // Um alerta simples caso acabe o saldo
@@ -107,4 +133,37 @@ document.getElementById("btn-apostar").addEventListener("click", () => {
     } else {
         alert("O valor da aposta deve ser maior que zero!");
     }
+});
+
+// Ouve o evento de nova rodada vindo do Python
+socket.addEventListener("message", (event) => {
+    const dados = JSON.parse(event.data);
+    
+    if (dados.tipo === "nova_rodada") {
+        // Limpa a mesa inteira
+        document.getElementById("cartas-mesa").innerHTML = "";
+        document.getElementById("cartas-bot").innerHTML = "";
+        
+        // Distribui suas novas cartas
+        const divMinhasCartas = document.getElementById("minhas-cartas");
+        divMinhasCartas.innerHTML = ""; 
+        dados.minhas_cartas.forEach(carta => {
+            const elCarta = document.createElement("img");
+            elCarta.src = `/svgs/${carta.valor}_${carta.naipe}.svg`;
+            elCarta.style.height = "120px";
+            elCarta.style.borderRadius = "8px";
+            elCarta.style.boxShadow = "0 4px 8px rgba(0,0,0,0.4)";
+            divMinhasCartas.appendChild(elCarta);
+        });
+
+        gsap.from("#minhas-cartas img", { y: -300, opacity: 0, rotation: 180, duration: 0.6, stagger: 0.15, ease: "back.out(1.2)" });
+
+        // Esconde o botão novamente
+        document.getElementById("btn-nova-rodada").style.display = "none";
+    }
+});
+
+// Envia a ação de recomeçar
+document.getElementById("btn-nova-rodada").addEventListener("click", () => {
+    socket.send(JSON.stringify({ botao: "nova_rodada" }));
 });

@@ -77,15 +77,51 @@ def criar_baralho_embaralhado():
     random.shuffle(baralho)
     return baralho
 
+def tomar_decisao_bot(cartas_bot, cartas_comunitarias):
+    """Avalia a força da mão do bot para decidir se ele Paga ou Corre (Fold)"""
+    
+    # Pré-flop (sem cartas na mesa)
+    if len(cartas_comunitarias) == 0:
+        valores = [VALORES_MAP[c['valor']] for c in cartas_bot]
+        # Se ele tem um par na mão ou cartas altas (J, Q, K, A)
+        if valores[0] == valores[1] or max(valores) >= 11:
+            chance_pagar = 85 # 85% de chance de aceitar sua aposta
+        else:
+            chance_pagar = 30 # Mão fraca, foge na maioria das vezes
+            
+    # Pós-flop (com cartas na mesa)
+    else:
+        # Reutiliza a nossa função de avaliar mão para ver o que o bot tem!
+        rank_atual, _ = obter_melhor_mao(cartas_bot + cartas_comunitarias)
+        
+        if rank_atual >= 1: # Tem pelo menos um Par
+            chance_pagar = 90
+        else: # Só tem carta alta
+            chance_pagar = 15 # Quase sempre corre, a menos que decida pagar pra ver (blefe)
+
+    # Rola um "dado" de 1 a 100 para dar imprevisibilidade humana
+    sorteio = random.randint(1, 100)
+    
+    if sorteio <= chance_pagar:
+        return "pagar"
+    else:
+        return "correr"
+    
 # --- SESSÃO WEBSOCKET ---
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     
-    # Já cobra os "Blinds" (10 fichas) na primeira mão do jogo
-    fichas_jogador = 990
-    fichas_bot = 990
-    pote = 20
+    fichas_jogador = 1000
+    fichas_bot = 1000
+    
+    # Define o Caio como o primeiro Dealer
+    dealer_atual = "jogador" 
+    
+    # Regra de Heads-Up: Dealer paga Small Blind (10), o outro paga Big Blind (20)
+    fichas_jogador -= 10
+    fichas_bot -= 20
+    pote = 30
     
     baralho = criar_baralho_embaralhado()
     cartas_jogador = [baralho.pop(), baralho.pop()]
@@ -98,7 +134,8 @@ async def websocket_endpoint(websocket: WebSocket):
         "fichas_bot": fichas_bot,
         "pote": pote,
         "minhas_cartas": cartas_jogador,
-        "cartas_adversario": cartas_bot 
+        "cartas_adversario": cartas_bot,
+        "dealer": dealer_atual # Avisa o frontend quem é o Dealer
     }
     await websocket.send_text(json.dumps(estado_inicial))
     
@@ -114,24 +151,57 @@ async def websocket_endpoint(websocket: WebSocket):
                 if valor_aposta <= 0:
                     await websocket.send_text(json.dumps({"tipo": "erro", "mensagem": "Aposta inválida."}))
                 elif fichas_jogador >= valor_aposta:
+                    
+                    # Tira suas fichas e põe no pote
                     fichas_jogador -= valor_aposta
                     pote += valor_aposta
-                    if fichas_bot >= valor_aposta:
-                        fichas_bot -= valor_aposta
-                        pote += valor_aposta
-                        mensagem_acao = f"Você apostou {valor_aposta}. O Bot pagou."
-                    else:
-                        pote += fichas_bot
-                        mensagem_acao = f"Você apostou {valor_aposta}. O Bot foi de All-In!"
-                        fichas_bot = 0
+                    
+                    # --- INTELIGÊNCIA DO BOT AQUI ---
+                    decisao_bot = tomar_decisao_bot(cartas_bot, cartas_comunitarias)
+                    
+                    if decisao_bot == "pagar":
+                        # O bot teve coragem e pagou
+                        if fichas_bot >= valor_aposta:
+                            fichas_bot -= valor_aposta
+                            pote += valor_aposta
+                            mensagem_acao = f"Você apostou ${valor_aposta}. O Bot analisou e PAGOU."
+                        else:
+                            pote += fichas_bot
+                            mensagem_acao = f"Você apostou ${valor_aposta}. O Bot foi de ALL-IN!"
+                            fichas_bot = 0
 
-                    await websocket.send_text(json.dumps({
-                        "tipo": "atualizacao_mesa",
-                        "fichas_jogador": fichas_jogador,
-                        "fichas_bot": fichas_bot,
-                        "pote": pote,
-                        "mensagem": mensagem_acao
-                    }))
+                        await websocket.send_text(json.dumps({
+                            "tipo": "atualizacao_mesa",
+                            "fichas_jogador": fichas_jogador,
+                            "fichas_bot": fichas_bot,
+                            "pote": pote,
+                            "mensagem": mensagem_acao
+                        }))
+                        
+                    elif decisao_bot == "correr":
+                        # O Bot ficou com medo da sua aposta e fugiu! Você leva o Pote.
+                        fichas_jogador += pote
+                        mensagem_fim = f"Você apostou ${valor_aposta} e o Bot CORREU! Você puxou o pote."
+                        pote = 0
+                        
+                        # Reutilizamos a estrutura de fim de jogo para o JS mostrar a tela de vitória
+                        resultado_fold_bot = {
+                            "mensagem": mensagem_fim,
+                            "cartas_bot": cartas_bot,
+                            "fichas_jogador": fichas_jogador,
+                            "fichas_bot": fichas_bot
+                        }
+                        
+                        # Manda o evento disfarçado de cartas de mesa para acionar o fim do jogo no Frontend
+                        await websocket.send_text(json.dumps({
+                            "tipo": "atualizacao_cartas_mesa",
+                            "cartas_mesa": cartas_comunitarias,
+                            "mensagem": "O Bot arregou.",
+                            "showdown": resultado_fold_bot
+                        }))
+                        
+                else:
+                    await websocket.send_text(json.dumps({"tipo": "erro", "mensagem": "Saldo insuficiente."}))
 
             # --- LÓGICA DE PAGAR / AVANÇAR FASE ---
             elif comando == "pagar":
@@ -207,20 +277,26 @@ async def websocket_endpoint(websocket: WebSocket):
                 cartas_bot = [baralho.pop(), baralho.pop()]
                 cartas_comunitarias = []
                 
-                # Cobra os Blinds automáticos da nova rodada
-                if fichas_jogador >= 10 and fichas_bot >= 10:
-                    fichas_jogador -= 10
-                    fichas_bot -= 10
-                    pote = 20
+                # Revezamento do Dealer
+                dealer_atual = "bot" if dealer_atual == "jogador" else "jogador"
+                
+                # Cobrança das Blinds baseada em quem é o Dealer
+                if dealer_atual == "jogador":
+                    fichas_jogador -= 10 # Caio é Dealer (Paga SB)
+                    fichas_bot -= 20     # Bot paga BB
                 else:
-                    pote = 0 # Prevenção simples caso alguém zere as fichas
+                    fichas_bot -= 10     # Bot é Dealer (Paga SB)
+                    fichas_jogador -= 20 # Caio paga BB
+                    
+                pote = 30
                 
                 await websocket.send_text(json.dumps({
                     "tipo": "nova_rodada",
                     "minhas_cartas": cartas_jogador,
                     "fichas_jogador": fichas_jogador,
                     "fichas_bot": fichas_bot,
-                    "pote": pote
+                    "pote": pote,
+                    "dealer": dealer_atual # Envia a nova posição
                 }))
                     
     except WebSocketDisconnect:

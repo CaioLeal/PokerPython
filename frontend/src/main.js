@@ -5,6 +5,17 @@ const socket = new WebSocket("ws://127.0.0.1:8000/ws");
 const spanMinhasFichas = document.getElementById("minhas-fichas");
 const spanPote = document.getElementById("valor-pote");
 
+// Função para mover a ficha D na tela
+function atualizarDealer(quemEODealer) {
+    if (quemEODealer === "jogador") {
+        document.getElementById("dealer-jogador").style.display = "inline-block";
+        document.getElementById("dealer-bot").style.display = "none";
+    } else {
+        document.getElementById("dealer-jogador").style.display = "none";
+        document.getElementById("dealer-bot").style.display = "inline-block";
+    }
+}
+
 // O que fazer quando a conexão abrir
 socket.onopen = () => {
     console.log("🟢 Conexão estabelecida com o backend em Python!");
@@ -18,6 +29,7 @@ socket.onmessage = (event) => {
     if (dados.tipo === "boas_vindas") {
         spanMinhasFichas.innerText = dados.fichas_jogador;
         spanPote.innerText = dados.pote;
+        atualizarDealer(dados.dealer);
         
         // Pega a div onde as cartas do Caio vão ficar
         const divMinhasCartas = document.getElementById("minhas-cartas");
@@ -143,6 +155,7 @@ socket.addEventListener("message", (event) => {
         // Limpa a mesa inteira
         document.getElementById("cartas-mesa").innerHTML = "";
         document.getElementById("cartas-bot").innerHTML = "";
+        atualizarDealer(dados.dealer);
         
         // Distribui suas novas cartas
         const divMinhasCartas = document.getElementById("minhas-cartas");

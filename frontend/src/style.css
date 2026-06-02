@@ -140,3 +140,48 @@ button:active {
   box-shadow: 0 2px 4px rgba(0,0,0,0.5);
   vertical-align: middle;
 }
+
+/* Container para segurar a pilha de fichas no centro */
+.montanha-fichas {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  margin: 10px auto;
+}
+
+/* Base geométrica da Ficha de Poker 3D */
+.ficha-poker {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: white;
+  border: 4px dashed rgba(255, 255, 255, 0.5); /* O tracejado clássico da borda */
+  position: absolute;
+}
+
+/* Cores e profundidade (3D) baseadas no valor */
+/* A sombra (box-shadow) é o que dá a espessura da ficha! */
+.ficha-10 { 
+  background-color: #3b82f6; 
+  box-shadow: 0 4px 0 #1e3a8a, 0 6px 6px rgba(0,0,0,0.4); 
+} /* Azul */
+
+.ficha-50 { 
+  background-color: #ef4444; 
+  box-shadow: 0 4px 0 #7f1d1d, 0 6px 6px rgba(0,0,0,0.4); 
+} /* Vermelha */
+
+.ficha-100 { 
+  background-color: #10b981; 
+  box-shadow: 0 4px 0 #064e3b, 0 6px 6px rgba(0,0,0,0.4); 
+} /* Verde */
+
+.ficha-500 { 
+  background-color: #1e293b; 
+  box-shadow: 0 4px 0 #0f172a, 0 6px 6px rgba(0,0,0,0.4); 
+} /* Preta */

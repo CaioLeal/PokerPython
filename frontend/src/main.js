@@ -16,6 +16,55 @@ function atualizarDealer(quemEODealer) {
     }
 }
 
+// Função para desenhar a montanha de fichas
+function desenharFichas(valorTotal) {
+    const container = document.getElementById("fichas-pote");
+    container.innerHTML = ""; // Limpa a mesa antes de jogar as novas
+
+    if (valorTotal <= 0) return;
+
+    // Sistema de "Troco" para usar o mínimo de fichas possível
+    let restante = valorTotal;
+    const valoresFichas = [500, 100, 50, 10];
+    const fichasUsadas = [];
+
+    valoresFichas.forEach(valor => {
+        while (restante >= valor) {
+            fichasUsadas.push(valor);
+            restante -= valor;
+        }
+    });
+
+    // Para ficar igual a uma mesa real, a ficha de maior valor fica embaixo
+    fichasUsadas.reverse();
+
+    // Cria os elementos HTML das fichas e empilha
+    fichasUsadas.forEach((valorFicha, index) => {
+        const elFicha = document.createElement("div");
+        elFicha.className = `ficha-poker ficha-${valorFicha}`;
+        elFicha.innerText = valorFicha;
+        
+        // Empilha: Cada ficha sobe 5px em relação à anterior
+        const deslocamentoY = index * 5; 
+        elFicha.style.bottom = `${deslocamentoY}px`;
+        
+        // Dá uma "bagunçadinha" milimétrica aleatória para não parecer um pilar duro
+        const baguncaX = (Math.random() - 0.5) * 4; 
+        elFicha.style.left = `calc(50% - 22.5px + ${baguncaX}px)`;
+
+        container.appendChild(elFicha);
+    });
+
+    // O toque final: GSAP para fazê-las cair do céu quicando!
+    gsap.from("#fichas-pote .ficha-poker", {
+        y: -200,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.05,
+        ease: "bounce.out"
+    });
+}
+
 // O que fazer quando a conexão abrir
 socket.onopen = () => {
     console.log("🟢 Conexão estabelecida com o backend em Python!");
@@ -29,6 +78,8 @@ socket.onmessage = (event) => {
     if (dados.tipo === "boas_vindas") {
         spanMinhasFichas.innerText = dados.fichas_jogador;
         spanPote.innerText = dados.pote;
+        desenharFichas(dados.pote);
+        desenharFichas(dados.pote);
         atualizarDealer(dados.dealer);
         
         // Pega a div onde as cartas do Caio vão ficar
@@ -63,7 +114,7 @@ socket.onmessage = (event) => {
     else if (dados.tipo === "atualizacao_mesa") {
         spanMinhasFichas.innerText = dados.fichas_jogador;
         spanPote.innerText = dados.pote;
-        
+        desenharFichas(dados.pote);
         console.log("💰 Dinheiro movimentado:", dados.mensagem);
     }
     // Nova regra: Ouve as cartas viradas no centro da mesa
@@ -92,7 +143,7 @@ socket.onmessage = (event) => {
 
                 spanMinhasFichas.innerText = dados.showdown.fichas_jogador;
                 spanPote.innerText = "0"; // O pote esvaziou
-                
+                desenharFichas(0);
                 const divCartasBot = document.getElementById("cartas-bot");
                 divCartasBot.innerHTML = "";
                 
